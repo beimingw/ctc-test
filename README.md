@@ -9,7 +9,7 @@ This ansible playbook can be used for processing a given CtC test dataset in CSV
 - OK: the test is successful 
 - FAILED: test is considered failed when the returned data does not match expectation
 - ERROR: not able to get a valid response from the target backend
-- SKIPPED: the entry's bank id is not valid 
+- SKIPPED: the entry's bank id is not in use
 
 Example output:
 ```
@@ -48,10 +48,10 @@ peers:
 ```
 To run the playbook:
 ```
-# this expect an input file named 'input.csv' in the same directory
+# this expects an input file named 'input.csv' in the same directory
 ansible-playbook test.yaml
 
-# alternatively, provide the input file as 
+# alternatively, provide the input file as an extra var
 ansible-playbook test.yaml -e 'inputFile=/tmp/testdata.csv'
 ```
 
