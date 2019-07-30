@@ -1,0 +1,17 @@
+peers:
+  - name: "bank 1"
+    id: PCOBGB
+    backend: http://35.246.41.155:10010
+  - name: "bank 2"
+    id: GVBCGB
+    backend: http://35.189.88.228:10010
+  - name: "bank 3"
+    id: BWBAGB
+    backend: http://35.246.8.72:10010
+  - name: "bank 4"
+    id: HCBGGB
+    backend: http://35.197.248.242:10010
+  - name: "bank 5"
+    id: FOCSGB
+    backend: http://35.246.62.212:10010
+

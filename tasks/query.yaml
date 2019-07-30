@@ -1,0 +1,51 @@
+- name: get test case details 
+  set_fact:
+    bankId: "{{ testCase['bank_id'] }}"
+    customerId: "{{ testCase['customer_id'] }}"
+- name: skip test if bankId is not valid
+  set_fact:
+    testResults: "{{ testResults | combine({customerId: 'SKIPPED'}) }}"
+  when: bankId not in validBankIds
+
+- name: test for customer {{ customerId }}
+  block:
+  - name: get backend 
+    set_fact:
+      peerBackend: "{{ peers | json_query(\"[?id == '\" + bankId + \"'].backend\") }}"
+    failed_when: peerBackend | length == 0 
+  # NOTE: for submitcustomerbyfields API, define a payload template to map the field names
+  - name: make api call
+    ignore_errors: true
+    uri:
+      url: "{{ peerBackend[0] }}/api/submitcustomerbyid?business_id={{ testCase['customer_id'] }}"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      timeout: "{{ apiTimeout }}"
+      return_content: true
+      status: 200
+    register: matchResults
+  - name: process failed api call
+    set_fact:
+      testResults: "{{ testResults | combine({customerId: 'ERROR'}) }}"
+    when: matchResults is failed
+  - debug: msg="Result received in {{ matchResults.elapsed }} seconds."
+    when: matchResults is succeeded
+  when: bankId in validBankIds
+
+- name: evaluate result
+  block:
+  - name: get entity id
+    set_fact:
+      entityId: "{{ testCase['orig_entity_id'] }}"
+  - name: calculate expected number of bank id for entity {{ entityId }}
+    set_fact:
+      expectedNumberOfRecords: "{{ inputData.list | json_query(\"[?orig_entity_id == '\" + entityId + \"'].bank_id\") | intersect(validBankIds) | length }}"
+  - name: get the names of the bank returned result
+    set_fact:
+      returnedNumberOfRecords: "{{ matchResults.json | json_query('coincidenceBanks[*].bank_name') | unique | length }}"
+  - debug: msg="expectedNumberOfRecords={{ expectedNumberOfRecords }}; returnedNumberOfRecords = {{ returnedNumberOfRecords }}"
+  - name: process test result
+    set_fact: 
+      testResults: "{{ testResults | combine({customerId: 'OK' if expectedNumberOfRecords == returnedNumberOfRecords else 'FAILED'}) }}"
+  when: bankId in validBankIds and matchResults is succeeded

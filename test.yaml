@@ -1,0 +1,37 @@
+- hosts: localhost
+  vars:
+    ansible_connection: local
+    inputFile: input.csv
+    apiTimeout: 300     # 5mins
+    testResults: {}
+  vars_files:
+    - ./vars.yaml
+  tasks:
+  # remove "t2." & "t3." prefix to make it easier to manipulate input data as json object
+  - name: re-define field names
+    shell: head -n1 {{ inputFile }} | sed -e 's/t[23].//g'
+    register: fieldNames
+
+  - name: load test data from {{ inputFile }}
+    read_csv:
+      path: "{{ inputFile }}"
+      fieldnames: "{{ fieldNames.stdout }}"
+    register: inputData
+
+  - name: get list of valid banks
+    set_fact:
+      validBankIds: "{{ peers | json_query('[*].id') }}"
+
+  - name: start test
+    include_tasks: tasks/query.yaml
+    loop: "{{ inputData.list }}"
+    vars:
+      testCase: "{{ item }}"
+    # ignore first line becasue we changed field name
+    no_log: true
+    when: item.customer_id != 't3.customer_id'
+
+  - name: summary of test result
+    debug: var=testResults
+  
+  
